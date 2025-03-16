@@ -155,8 +155,7 @@ def get_credentials():
             creds.refresh(Request())
         else:
             try:
-                flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-                    "client_secret_633689314020-5bl7hgnn1gq7dovsu5mu220uv0d5m8hi.apps.googleusercontent.com.json", ['https://www.googleapis.com/auth/spreadsheets','https://www.googleapis.com/auth/drive'])
+                flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file()
                 creds = flow.run_local_server(port=0)
             except Exception as e:
                 print(f"json:{e}")
