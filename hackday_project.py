@@ -46,7 +46,7 @@ screen_width, screen_height = info.current_w, info.current_h
 print(screen_width, screen_height)
 screen = pygame.display.set_mode((screen_width, screen_height))
 clock = pygame.time.Clock()
-font = pygame.font.SysFont("Arial", 20)
+font = pygame.font.Font("C:/Windows/Fonts/msjh.ttc", 40)
 timer_initiate = False
 timer = font.render("0%", True, (255, 255, 255))
 
@@ -59,12 +59,12 @@ counter = 0
 visual_start_time = time.time()
 
 pygame.mixer.init()
-alarm_sound = pygame.mixer.Sound("C:\\Users\\ray22\\Downloads\\OIIAOIIA CAT but in 4K Not Actually.mp3")
+alarm_sound = pygame.mixer.Sound("C:\\Users\\ray22\\Desktop\\works\\pptpro\\OIIAOIIA CAT but in 4K Not Actually.mp3")
 
 # 設定 PDF 檔案與解析度
 #c:\Users\ray22\Downloads\會考準備經驗分享.pdf"C:\Users\ray22\Downloads\資訊學科能力競賽市賽心得.pdf"
 #"C:\\Users\\ray22\\Downloads\\2100_1.pptx.pdf""C:\Users\ray22\Downloads\資訊科技學習歷程.pdf"
-PDF_FILE = "C:\\Users\\ray22\\Downloads\\會考準備經驗分享.pdf"
+PDF_FILE = "C:\\Users\\ray22\\Desktop\\works\\pptpro\\這是什麼，為何如此重要.pdf"
 def get_pdf_page_size(pdf_path):
     """使用 pdfinfo 取得 PDF 頁面尺寸（點，1 點 = 1/72 英吋）"""
     try:
@@ -95,7 +95,7 @@ if page_width_pt and page_height_pt:
     images = convert_from_path(PDF_FILE, dpi=dpii+1, use_pdftocairo=True)
 else:
     print("無法讀取 PDF 頁面大小，使用預設 DPI")
-    images = convert_from_path(PDF_FILE, dpi=120, use_pdftocairo=True)
+    images = convert_from_path(PDF_FILE, dpi=96, use_pdftocairo=True)
 PAGE_INDEX = 0  # 初始顯示第 1 
 
 
@@ -112,7 +112,7 @@ best_cols = 1
 best_rows = 1
 max_thumbnail_width = 0
 max_thumbnail_height = 0
-
+open_trans = False
 
 
 for cols in range(1, screen_width // 100):  # 最少 1 列，最多能放的列數
@@ -155,7 +155,9 @@ def get_credentials():
             creds.refresh(Request())
         else:
             try:
-                flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file()
+                flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
+                    "client_secret_633689314020-5bl7hgnn1gq7dovsu5mu220uv0d5m8hi.apps.googleusercontent.com.json", ['https://www.googleapis.com/auth/spreadsheets','https://www.googleapis.com/auth/drive']
+                )
                 creds = flow.run_local_server(port=0)
             except Exception as e:
                 print(f"json:{e}")
@@ -180,11 +182,6 @@ def get_sheet_data(spreadsheet_id, range_name):
         
     return result.get('values', [])
 
-# 用你的試算表 ID 和範圍來替換這些值
-spreadsheet_id = '177pEuDlQmdqzxAsemXHhXPDg0Nhqtdrtubtoe6NfBcI'
-range_name = "彈幕留言"  # 可以自訂範圍
-data = get_sheet_data(spreadsheet_id, range_name)
-
 
 
 def pil_to_surface(pil_image, size=None):
@@ -197,7 +194,7 @@ def pil_to_surface(pil_image, size=None):
 have_filter = False
 def update_slide():
     """更新當前幻燈片"""
-    global counter, timer_initiate, have_filter,surface
+    global counter, timer_initiate, have_filter,surface,open_trans
     if images and 0 <= counter < len(images):
         try:
             screen.fill((255, 255, 255))  # 清空畫面
@@ -206,7 +203,8 @@ def update_slide():
             else:
                 new_img = images[counter]
             surface = pil_to_surface(new_img)
-            invisable()
+            if open_trans:
+                invisable()
             screen.blit(surface, (0, 0))  # 顯示當前頁面
             if timer_initiate:
                 draw_timer()
@@ -240,6 +238,21 @@ def prev_slide():
         if counter > 0:
             counter -= 1
             update_slide()
+
+def draw_lottery():
+    candidate_input = simpledialog.askstring("抽籤名單", "請輸入名字（用逗號分隔）")
+    if not candidate_input:
+        return
+    choices = []
+    candidates = candidate_input.split(",")
+    if candidates:
+        for i in range(int(candidates[0]), int(candidates[1])):
+            choices.append(i) 
+        winner = random.choice(choices)
+        messagebox.showinfo("抽籤結果", f"恭喜 {winner} 被選中！")
+    else:
+        messagebox.showinfo("抽籤結果", "沒有候選人，無法抽籤！")
+
 # ========== 可視化計時器 ==========
 def start_timer():
     global timer_initiate, start_time, time_setting, timer_label, button_delete
@@ -272,7 +285,6 @@ def draw_timer():
         alarm_sound.play()
         button1 = tk.Button(root, text="關閉計時器", command=lambda:close_timer(button1))
         button1.pack()
-    return elapsed_time
 def close_timer(button):
     global button_delete
     alarm_sound.stop() 
@@ -313,23 +325,27 @@ def display_thumbnails():
 
 show_thumbnails = False
 def selection():
-    global counter, show_thumbnails
-    show_thumbnails = True
-    display_thumbnails()
-    print(len(images))
-    page_select =[f"頁面 {i}"for i in range(1,len(images)+1)]
-    quick_window = tk.Toplevel(root)
-    quick_window.title("快選頁面")
-    quick_window.geometry("250x300")
-    tk.Label(quick_window, text="請選擇頁面:", font=("Arial", 14)).pack(pady=10)
-    listbox = tk.Listbox(quick_window, height=10)
-    for page in page_select:
-        listbox.insert(tk.END, page)
-        listbox.pack(pady=10)
+    movement = random.randint(0,2)
+    if not movement:
+        ad_play()
+    else:
+        global counter, show_thumbnails
+        show_thumbnails = True
+        display_thumbnails()
+        print(len(images))
+        page_select =[f"頁面 {i}"for i in range(1,len(images)+1)]
+        quick_window = tk.Toplevel(root)
+        quick_window.title("快選頁面")
+        quick_window.geometry("250x300")
+        tk.Label(quick_window, text="請選擇頁面:", font=("Arial", 14)).pack(pady=10)
+        listbox = tk.Listbox(quick_window, height=10)
+        for page in page_select:
+            listbox.insert(tk.END, page)
+            listbox.pack(pady=10)
 
-    select_button = tk.Button(quick_window, text="選擇", 
-    command=lambda: selected_option(quick_window,listbox))
-    select_button.pack(pady=5)
+        select_button = tk.Button(quick_window, text="選擇", 
+        command=lambda: selected_option(quick_window,listbox))
+        select_button.pack(pady=5)
 
 def selected_option(quick_window,listbox):
     global counter, timer_initiate, show_thumbnails
@@ -347,8 +363,12 @@ bigger= False
 detection = False
 
 def set_detection():
-    global detection
-    detection = True
+    choose_movement = random.randint(0,2)
+    if not choose_movement:
+        ad_play()
+    else:
+        global detection
+        detection = True
 
 def detect_frame():
     global images, detection, points, bigger,counter, screen
@@ -397,77 +417,74 @@ def display_zoom(zoom, new_x, new_y):
         screen.blit(zoom, (new_x, new_y))
         pygame.display.flip()
 
-
-
-
-
+#廣告==========================================
+ad1 ="C:\\Users\\ray22\\Desktop\\works\\pptpro\\无标题视频——使用Clipchamp制作.mp4"
+ad2 ="C:\\Users\\ray22\\Desktop\\works\\pptpro\\感冒用思思.mp4"
+ad3 ="C:\\Users\\ray22\\Desktop\\works\\pptpro\\貓戰.mp4"
+def ad_play():
+    display_choose = random.randint(0,2)
+    if display_choose == 0:
+        os.startfile(ad1)
+    elif display_choose == 1:
+        os.startfile(ad2)
+    else:
+        os.startfile(ad3)   
 # ========== 投票系統 ==========
 def start_vote():
-    global vote_results
-    vote_options = simpledialog.askstring("設定投票選項", "請輸入選項（用逗號分隔）")
-    if not vote_options:
-        return
-    options = vote_options.split(",")
-    vote_results = {option: 0 for option in options}
+    move = random.randint(0,2)
+    if not move:
+        ad_play()
+    else:
+        url = "https://forms.gle/SZYV7kTm7CEYtbiN7"
+        qr = qrcode.make(url)
+        qr.save("vote_qr.png")
 
-    url = "http://localhost:8000"
-    qr = qrcode.make(url)
-    qr.save("vote_qr.png")
+    # 顯示 QR Code
+        qr_window = tk.Toplevel()
+        qr_window.title("投票 QR Code")
+        qr_img = PILImage.open("vote_qr.png")
+        qr_img = ImageTk.PhotoImage(qr_img)
+        qr_label = tk.Label(qr_window, image=qr_img)
+        qr_label.image = qr_img
+        qr_label.pack()
 
-    qr_window = tk.Toplevel(root)
-    qr_window.title("投票 QR Code")
-    qr_img = PILImage.open("vote_qr.png")
-    qr_img = ImageTk.PhotoImage(qr_img)
-    qr_label = tk.Label(qr_window, image=qr_img)
-    qr_label.image = qr_img
-    qr_label.pack()
-    tk.Button(qr_window, text="關閉 QR Code", command=qr_window.destroy).pack()
+        tk.Button(qr_window, text="關閉", command=qr_window.destroy).pack()
 
-    threading.Thread(target=run_vote_server, daemon=True).start()
-    webbrowser.open(url)
 
-def run_vote_server():
-    class VoteHandler(SimpleHTTPRequestHandler):
-        def do_GET(self):
-            if self.path.startswith("/vote?"):
-                query = self.path.split("?")[1]
-                option = query.split("=")[1]
-                if option in vote_results:
-                    vote_results[option] += 1
-                self.send_response(200)
-                self.end_headers()
-                self.wfile.write(b"nn")
-
-    server = HTTPServer(("localhost", 8000), VoteHandler)
-    server.serve_forever()
-
-def end_vote():
-    plt.bar(vote_results.keys(), vote_results.values())
-    plt.title("投票結果")
-    plt.show()
-damn = [row[0] for row in data]
-print(damn)
 #=======彈幕================================================================================================
+damn = []  # 存放彈幕的列表
+damn_lock = threading.Lock()  # 確保執行緒安全
 displayed_answers = set()
 
 def get_new_answers():
-    """ 取得試算表中新的回答，避免重複顯示 """
-    global displayed_answers,data
-    all_values = data.get_all_values()
-    new_answers = [row[0] for row in all_values if row[0] not in displayed_answers]
-    displayed_answers.update(new_answers)  # 記錄已顯示過的答案
+    global displayed_answers,damn
+    all_values = damn
+    new_answers = [row for row in all_values if row not in displayed_answers]
+    displayed_answers.update(row for row in new_answers)  # 記錄已顯示過的答案
     return new_answers
+
+outload = []  # 存放彈幕的列表
 def chatting(text):
-    global damn
-    y_position = random.randint(50, 550)  # 避免太靠上下邊界
-    damn.append({"text": text, "x": 800, "y": y_position})
+    """ 在畫面右側隨機位置新增彈幕，確保正確的字典結構 """
+    global outload
+
+    y_position = random.randint(0, screen_height//3)  # 避免太靠上下邊界
+    with damn_lock:
+        outload.append({"text": text, "x": screen_width, "y": y_position})  # 確保是字典格式
+
 def draw_danmu():
-    global damn
     """ 繪製彈幕並向左移動 """
-    for danmu in damn:
-        text_surface = font.render(danmu["text"], True, (255, 255, 255))
-        screen.blit(text_surface, (danmu["x"], danmu["y"]))
-        danmu["x"] -= 2  # 每次更新向左移動
+    global outload, damn_lock
+    for danmu in outload[:]:
+        if isinstance(danmu, dict) and "text" in danmu:
+            text_surface = font.render(danmu["text"], True, (255, 255, 255))
+            screen.blit(text_surface, (danmu["x"], danmu["y"]))
+            danmu["x"] -= 8 # 彈幕向左移動
+            pygame.display.flip()  # 更新畫面
+    outload = [danmu for danmu in outload if danmu["x"] + text_surface.get_width() > 0]  # 移除已經移出螢幕的彈幕
+    
+                
+
     
 
 
@@ -483,8 +500,19 @@ def apply_effects():
     if keys[pygame.K_t]:  # 按 T 旋轉畫面
         root.lower()
         rotate_screen()
-        
-    
+    if keys[pygame.K_SPACE]:  # 按 Y 重置畫面
+        counter = random.randint(0, len(images) - 1)
+        update_slide()
+    if keys[pygame.K_a]:  # 按 A 開啟透明度
+        for i in range(200):
+            rotate_screen()
+            toggle_cursor_drift()
+            counter = random.randint(0, len(images) - 1)
+            update_slide()
+
+        messagebox.showerror("錯誤", "程序已崩潰，將關閉運行程式!")
+        pygame.quit()
+        root.quit()
 #滑鼠飄移
 cursor_drift = False  # 開關控制
 drift_speed = 25  # 飄移速度（可以調整）
@@ -515,10 +543,10 @@ def rotate_screen():
     screen.blit(rotated_screen, new_rect.topleft)
     pygame.display.flip()
 
-
+damnuu = False
 # ========== Pygame 主迴圈 ==========
 def run_pygame():
-    global running,detect_used,zoomed_i,new_a,new_b,detection,bigger,cursor_drift, have_filter
+    global running,detect_used,zoomed_i,new_a,new_b,detection,bigger,cursor_drift, have_filter,damnuu,data,damn,visual_start_time,open_trans
     last_fetch_time = time.time()
     running = True
     while running:
@@ -531,7 +559,12 @@ def run_pygame():
             root.quit()
         if keys[pygame.K_f]:
             have_filter = True
-        # if keys[pygame.K_c]:
+        if keys[pygame.K_d]:
+            visual_start_time = time.time()
+            open_trans = True
+            update_slide()
+            
+
         #     detection = False
         #     detect_used =False
         #     bigger = False
@@ -546,13 +579,20 @@ def run_pygame():
         else:
             update_slide()
         draw_danmu()
-        
+        # 用你的試算表 ID 和範圍來替換這些值
+
     # 每 5 秒檢查一次新答案
-        if time.time() - last_fetch_time > 5:
+        if time.time() - last_fetch_time > 10:
+            spreadsheet_id = '1xem_1nEeM9TMLttg7eCuvEruEWhIxcGn4eohYvnhoE0'
+            range_name = "彈幕留言"  # 可以自訂範圍
+            data = get_sheet_data(spreadsheet_id, range_name)
+            damn = [row[1] for row in data]
             new_answers = get_new_answers()
             for ans in new_answers:
                 chatting(ans)  # 把新答案加入彈幕
             last_fetch_time = time.time()
+            damnuu = True
+        #if(damnuu):
         apply_effects()
 
         pygame.display.flip()
@@ -565,6 +605,8 @@ def run_pygame():
                     detect_used =False
                     bigger = False
                     have_filter = False
+                    visual_start_time = time.time()
+                    open_trans = False
                     update_slide()
                 elif event.button == 2:  # 滑鼠中鍵開關飄移
                     toggle_cursor_drift()
@@ -583,8 +625,7 @@ def run_pygame():
                 y = 0   
             elif y>screen_height:
                 y = screen_height
-            pygame.mouse.set_pos(x, y)
-            
+            pygame.mouse.set_pos(x, y)        
     pygame.quit()
     root.quit()
 
@@ -592,8 +633,8 @@ def run_pygame():
 # tk.Button(root, text="載入 PPT", command=convert_ppt_to_images).pack()
 tk.Button(root, text="上一頁", command=prev_slide).pack()
 tk.Button(root, text="下一頁", command=next_slide).pack()
-tk.Button(root, text="開始投票", command=start_vote).pack()
-tk.Button(root, text="結束投票", command=end_vote).pack()
+tk.Button(root, text="投放彈幕", command=start_vote).pack()
+tk.Button(root, text="抽籤", command=draw_lottery).pack()
 tk.Button(root, text="計時器", command=start_timer).pack()
 tk.Button(root, text="快選頁面", command=selection).pack()
 tk.Button(root, text="放大鏡", command=lambda: set_detection()).pack()
